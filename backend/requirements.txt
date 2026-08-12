@@ -1,0 +1,10 @@
+# 后端依赖清单 —— 全部为纯 Python 或具备 arm64(Apple Silicon) wheel 的包
+# 严格遵守技术契约 SPEC §0：禁止引入 numpy / pandas / torch 等需要编译的科学库，禁止 CUDA。
+# 数据库使用 Python 标准库 sqlite3，无需在此声明。
+# 安装方式：在 backend 目录执行 `pip install -r requirements.txt`
+
+fastapi==0.111.0           # Web 框架，提供 APIRouter / 依赖注入 / 自动文档
+uvicorn[standard]==0.30.1  # ASGI 服务器，[standard] 含 websockets / httptools 等可选加速
+python-dotenv==1.0.1       # 从 .env 文件读取环境变量
+httpx==0.27.0              # 异步/同步 HTTP 客户端，用于调用各家大模型 API
+pydantic==2.7.4            # 数据校验与序列化（Pydantic v2）

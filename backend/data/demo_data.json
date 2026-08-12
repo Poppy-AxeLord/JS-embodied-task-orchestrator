@@ -1,0 +1,324 @@
+{
+  "examples": [
+    { "instruction": "把红色的杯子放到桌子右边", "task_type": "取送", "difficulty": "简单" },
+    { "instruction": "先整理桌面，再去厨房拿一瓶水", "task_type": "整理", "difficulty": "中等" },
+    { "instruction": "分拣所有蓝色的方块到A区，红色的放到B区", "task_type": "分拣", "difficulty": "中等" },
+    { "instruction": "帮我规划仓库巡检路线，避开有人的区域", "task_type": "巡检", "difficulty": "困难" },
+    { "instruction": "清理桌面上的书和笔，放到收纳盒里", "task_type": "整理", "difficulty": "中等" },
+    { "instruction": "把易碎品轻轻放到上层货架", "task_type": "取送", "difficulty": "中等" },
+    { "instruction": "找到遥控器，送到客厅沙发上", "task_type": "取送", "difficulty": "简单" },
+    { "instruction": "按照从大到小的顺序排列这些盒子", "task_type": "排序", "difficulty": "中等" },
+    { "instruction": "检查所有抽屉里有没有钥匙", "task_type": "检查", "difficulty": "困难" },
+    { "instruction": "给植物浇水，然后开窗通风", "task_type": "养护", "difficulty": "简单" }
+  ],
+  "skills": [
+    {
+      "code": "MoveTo",
+      "name": "移动到",
+      "category": "移动类",
+      "icon": "🚶",
+      "description": "移动到指定位置或物体附近",
+      "input_params": [
+        { "name": "target", "type": "string", "desc": "目标位置或物体名称" }
+      ],
+      "output": { "type": "boolean", "desc": "是否成功到达目标附近" },
+      "enabled": 1
+    },
+    {
+      "code": "Navigate",
+      "name": "路径规划",
+      "category": "移动类",
+      "icon": "🗺️",
+      "description": "规划避障路径",
+      "input_params": [
+        { "name": "from", "type": "string", "desc": "起点位置" },
+        { "name": "to", "type": "string", "desc": "终点位置" },
+        { "name": "avoid", "type": "array", "desc": "需要避开的区域或障碍列表" }
+      ],
+      "output": { "type": "array", "desc": "规划得到的路径点序列" },
+      "enabled": 1
+    },
+    {
+      "code": "Rotate",
+      "name": "转向",
+      "category": "移动类",
+      "icon": "🔄",
+      "description": "旋转指定角度",
+      "input_params": [
+        { "name": "angle", "type": "number", "desc": "旋转角度（度），正为顺时针" }
+      ],
+      "output": { "type": "boolean", "desc": "是否完成转向" },
+      "enabled": 1
+    },
+    {
+      "code": "Patrol",
+      "name": "巡检",
+      "category": "移动类",
+      "icon": "🛡️",
+      "description": "按路线巡检",
+      "input_params": [
+        { "name": "route", "type": "array", "desc": "巡检路线的途经点列表" }
+      ],
+      "output": { "type": "object", "desc": "巡检结果与异常记录" },
+      "enabled": 1
+    },
+    {
+      "code": "ReturnHome",
+      "name": "返回原点",
+      "category": "移动类",
+      "icon": "🏠",
+      "description": "回到充电/起始点",
+      "input_params": [],
+      "output": { "type": "boolean", "desc": "是否成功返回原点" },
+      "enabled": 1
+    },
+    {
+      "code": "Grasp",
+      "name": "抓取",
+      "category": "操作类",
+      "icon": "🤏",
+      "description": "抓取物体",
+      "input_params": [
+        { "name": "object", "type": "string", "desc": "待抓取的物体名称" },
+        { "name": "force", "type": "number", "desc": "抓取力度（0-100），易碎品取低值" }
+      ],
+      "output": { "type": "boolean", "desc": "是否成功抓住物体" },
+      "enabled": 1
+    },
+    {
+      "code": "Place",
+      "name": "放置",
+      "category": "操作类",
+      "icon": "📦",
+      "description": "放置到目标位置",
+      "input_params": [
+        { "name": "object", "type": "string", "desc": "待放置的物体名称" },
+        { "name": "location", "type": "string", "desc": "目标放置位置" }
+      ],
+      "output": { "type": "boolean", "desc": "是否成功放置" },
+      "enabled": 1
+    },
+    {
+      "code": "Push",
+      "name": "推",
+      "category": "操作类",
+      "icon": "👉",
+      "description": "推动物体",
+      "input_params": [
+        { "name": "object", "type": "string", "desc": "待推动的物体名称" },
+        { "name": "direction", "type": "string", "desc": "推动方向，如左/右/前/后" }
+      ],
+      "output": { "type": "boolean", "desc": "是否成功推动" },
+      "enabled": 1
+    },
+    {
+      "code": "Pour",
+      "name": "倾倒",
+      "category": "操作类",
+      "icon": "🫗",
+      "description": "倾倒（如浇水）",
+      "input_params": [
+        { "name": "container", "type": "string", "desc": "盛装容器名称" },
+        { "name": "target", "type": "string", "desc": "倾倒目标，如植物/水杯" }
+      ],
+      "output": { "type": "boolean", "desc": "是否成功倾倒" },
+      "enabled": 1
+    },
+    {
+      "code": "Open",
+      "name": "打开",
+      "category": "操作类",
+      "icon": "🔓",
+      "description": "打开抽屉/窗/盒",
+      "input_params": [
+        { "name": "target", "type": "string", "desc": "待打开的对象，如抽屉/窗户/盒子" }
+      ],
+      "output": { "type": "boolean", "desc": "是否成功打开" },
+      "enabled": 1
+    },
+    {
+      "code": "Wipe",
+      "name": "擦拭",
+      "category": "操作类",
+      "icon": "🧽",
+      "description": "擦拭表面",
+      "input_params": [
+        { "name": "area", "type": "string", "desc": "待擦拭的区域或表面" }
+      ],
+      "output": { "type": "boolean", "desc": "是否擦拭完成" },
+      "enabled": 1
+    },
+    {
+      "code": "Recognize",
+      "name": "识别",
+      "category": "感知类",
+      "icon": "👁️",
+      "description": "识别物体类别",
+      "input_params": [
+        { "name": "target", "type": "string", "desc": "待识别的目标或区域" }
+      ],
+      "output": { "type": "object", "desc": "识别到的物体类别与置信度" },
+      "enabled": 1
+    },
+    {
+      "code": "Locate",
+      "name": "定位",
+      "category": "感知类",
+      "icon": "📍",
+      "description": "定位物体坐标",
+      "input_params": [
+        { "name": "object", "type": "string", "desc": "待定位的物体名称" }
+      ],
+      "output": { "type": "object", "desc": "物体的空间坐标" },
+      "enabled": 1
+    },
+    {
+      "code": "Measure",
+      "name": "测量",
+      "category": "感知类",
+      "icon": "📏",
+      "description": "测量尺寸/重量/颜色",
+      "input_params": [
+        { "name": "object", "type": "string", "desc": "待测量的物体名称" },
+        { "name": "attr", "type": "string", "desc": "测量属性，如尺寸/重量/颜色" }
+      ],
+      "output": { "type": "object", "desc": "测量得到的属性值" },
+      "enabled": 1
+    },
+    {
+      "code": "Scan",
+      "name": "扫描",
+      "category": "感知类",
+      "icon": "🔍",
+      "description": "扫描区域",
+      "input_params": [
+        { "name": "area", "type": "string", "desc": "待扫描的区域范围" }
+      ],
+      "output": { "type": "array", "desc": "扫描到的物体列表" },
+      "enabled": 1
+    },
+    {
+      "code": "CheckColor",
+      "name": "颜色判别",
+      "category": "感知类",
+      "icon": "🎨",
+      "description": "判别颜色",
+      "input_params": [
+        { "name": "object", "type": "string", "desc": "待判别颜色的物体名称" }
+      ],
+      "output": { "type": "string", "desc": "判别得到的颜色" },
+      "enabled": 1
+    },
+    {
+      "code": "If",
+      "name": "条件判断",
+      "category": "逻辑类",
+      "icon": "❓",
+      "description": "条件分支",
+      "input_params": [
+        { "name": "condition", "type": "string", "desc": "需要评估的条件表达式" }
+      ],
+      "output": { "type": "boolean", "desc": "条件评估结果" },
+      "enabled": 1
+    },
+    {
+      "code": "Loop",
+      "name": "循环",
+      "category": "逻辑类",
+      "icon": "🔁",
+      "description": "遍历集合",
+      "input_params": [
+        { "name": "collection", "type": "array", "desc": "待遍历的集合" }
+      ],
+      "output": { "type": "array", "desc": "遍历执行结果" },
+      "enabled": 1
+    },
+    {
+      "code": "Compare",
+      "name": "比较",
+      "category": "逻辑类",
+      "icon": "⚖️",
+      "description": "比较两值",
+      "input_params": [
+        { "name": "a", "type": "any", "desc": "比较左值" },
+        { "name": "b", "type": "any", "desc": "比较右值" }
+      ],
+      "output": { "type": "number", "desc": "比较结果，-1/0/1" },
+      "enabled": 1
+    },
+    {
+      "code": "Sort",
+      "name": "排序",
+      "category": "逻辑类",
+      "icon": "🔢",
+      "description": "排序",
+      "input_params": [
+        { "name": "items", "type": "array", "desc": "待排序的元素集合" },
+        { "name": "order", "type": "string", "desc": "排序方向，asc/desc" }
+      ],
+      "output": { "type": "array", "desc": "排序后的元素序列" },
+      "enabled": 1
+    },
+    {
+      "code": "Filter",
+      "name": "筛选",
+      "category": "逻辑类",
+      "icon": "🧮",
+      "description": "按条件筛选",
+      "input_params": [
+        { "name": "items", "type": "array", "desc": "待筛选的元素集合" },
+        { "name": "criteria", "type": "string", "desc": "筛选条件" }
+      ],
+      "output": { "type": "array", "desc": "符合条件的元素子集" },
+      "enabled": 1
+    },
+    {
+      "code": "Wait",
+      "name": "等待",
+      "category": "控制类",
+      "icon": "⏳",
+      "description": "等待",
+      "input_params": [
+        { "name": "duration", "type": "number", "desc": "等待时长（毫秒）" }
+      ],
+      "output": { "type": "boolean", "desc": "等待是否完成" },
+      "enabled": 1
+    },
+    {
+      "code": "Retry",
+      "name": "失败重试",
+      "category": "控制类",
+      "icon": "♻️",
+      "description": "失败重试",
+      "input_params": [
+        { "name": "max_attempts", "type": "number", "desc": "最大重试次数" }
+      ],
+      "output": { "type": "boolean", "desc": "重试后是否成功" },
+      "enabled": 1
+    },
+    {
+      "code": "Confirm",
+      "name": "人工确认",
+      "category": "控制类",
+      "icon": "🙋",
+      "description": "请求人工确认",
+      "input_params": [
+        { "name": "message", "type": "string", "desc": "向人工提示的确认信息" }
+      ],
+      "output": { "type": "boolean", "desc": "人工是否确认通过" },
+      "enabled": 1
+    },
+    {
+      "code": "Notify",
+      "name": "通知",
+      "category": "控制类",
+      "icon": "🔔",
+      "description": "发送通知",
+      "input_params": [
+        { "name": "message", "type": "string", "desc": "待发送的通知内容" }
+      ],
+      "output": { "type": "boolean", "desc": "是否发送成功" },
+      "enabled": 1
+    }
+  ]
+}

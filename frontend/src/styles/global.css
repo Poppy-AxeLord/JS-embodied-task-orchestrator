@@ -1,0 +1,280 @@
+/* ============================================================
+ * 全局样式 global.css
+ * 设计目标：企业级 B 端中后台风格（参考 Ant Design Pro / Element Plus 后台）
+ * 主色：#2563EB（专业蓝）  背景：#f5f7fa（浅灰）
+ * 适配 Retina：使用矢量图标、矢量阴影、避免 1px 边框模糊。
+ * ============================================================ */
+
+/* ---------- CSS 变量：统一设计 token（设计规范 v1），方便全局换肤 ---------- */
+:root {
+  /* 主色与衍生色 */
+  --brand: #2563EB;
+  --brand-light: #3b76f0;
+  --brand-dark: #1d4ed8; /* hover 深化 */
+  --brand-soft: #EFF6FF; /* 主色浅底，用于选中项/标签背景 */
+
+  /* 中性色 */
+  --bg-page: #f6f7f9; /* 页面背景 */
+  --bg-card: #ffffff; /* 卡片背景 */
+  --text-primary: #1f2937; /* 主文字 */
+  --text-regular: #4b5563; /* 常规文字 */
+  --text-secondary: #6b7280; /* 次要文字 */
+  --text-placeholder: #9ca3af; /* 占位文字 */
+  --border-color: #e5e7eb; /* 边框 */
+  --border-light: #f3f4f6; /* 浅分隔线 */
+
+  /* 侧边栏深色主题（规范：#0F172A 底 + 选中项左侧 3px 主色指示条） */
+  --sidebar-bg: #0f172a; /* 深色侧边栏背景 */
+  --sidebar-bg-deep: #0b1120; /* 更深，用于 logo 区 */
+  --sidebar-text: #cbd5e1; /* 侧边栏常规文字 */
+  --sidebar-active-bg: rgba(37, 99, 235, 0.16); /* 选中菜单浅色高亮 */
+  --sidebar-active-text: #ffffff;
+
+  /* 语义色（与失败分类配色解耦，这里是通用状态色） */
+  --success: #10b981;
+  --warning: #f59e0b;
+  --danger: #ef4444;
+  --info: #6b7280;
+
+  /* 圆角与阴影（Linear/Notion 式轻阴影） */
+  --radius-sm: 6px;
+  --radius: 10px;
+  --radius-lg: 12px;
+  --shadow-card: 0 1px 2px rgba(16, 24, 40, 0.04), 0 1px 3px rgba(16, 24, 40, 0.08);
+  --shadow-hover: 0 4px 12px rgba(16, 24, 40, 0.10);
+
+  /* 布局尺寸 */
+  --header-height: 60px;
+  --aside-width: 240px;
+}
+
+/* ---------- 基础重置 ---------- */
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#app {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background-color: var(--bg-page);
+  color: var(--text-primary);
+  /* Retina 友好的系统字体栈，含中文字体回退（规范 v1 统一字体栈） */
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro', 'PingFang SC',
+    'Helvetica Neue', 'Microsoft YaHei', sans-serif;
+  font-size: 14px;
+  line-height: 1.6;
+  /* 字体抗锯齿，在 Retina 屏上更清晰锐利 */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+a {
+  color: var(--brand);
+  text-decoration: none;
+}
+
+/* ---------- 通用工具类 ---------- */
+
+/* 页面容器：标准内边距，承载每个视图 */
+.page {
+  padding: 20px;
+  min-height: 100%;
+}
+
+/* 卡片：白底、圆角、轻阴影，B 端标准容器 */
+.card {
+  background: var(--bg-card);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-card);
+  padding: 20px;
+  border: 1px solid var(--border-light);
+  transition: box-shadow 0.2s ease;
+}
+
+/* 可悬浮强调的卡片：hover 轻抬升（规范：0 4px 12px + translateY(-1px)） */
+.card-hoverable {
+  transition: all 0.2s ease;
+}
+.card-hoverable:hover {
+  box-shadow: var(--shadow-hover);
+  transform: translateY(-1px);
+}
+
+/* 区块标题：左侧主色竖条 + 标题文字，统一各页面分区标题样式 */
+.section-title {
+  position: relative;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-primary);
+  padding-left: 12px;
+  margin: 0 0 16px;
+  line-height: 1.4;
+}
+.section-title::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 4px;
+  height: 16px;
+  background: var(--brand);
+  border-radius: 2px;
+}
+
+/* 次级说明文字 */
+.section-desc {
+  color: var(--text-secondary);
+  font-size: 13px;
+  margin: 0 0 16px;
+}
+
+/* 弹性布局辅助类 */
+.flex {
+  display: flex;
+}
+.flex-center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.flex-between {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.flex-col {
+  display: flex;
+  flex-direction: column;
+}
+.gap-8 {
+  gap: 8px;
+}
+.gap-12 {
+  gap: 12px;
+}
+.gap-16 {
+  gap: 16px;
+}
+.gap-20 {
+  gap: 20px;
+}
+
+/* 文本辅助 */
+.text-secondary {
+  color: var(--text-secondary);
+}
+.text-muted {
+  color: var(--text-placeholder);
+}
+.text-brand {
+  color: var(--brand);
+}
+.text-success {
+  color: var(--success);
+}
+.text-danger {
+  color: var(--danger);
+}
+.text-bold {
+  font-weight: 600;
+}
+
+/* 间距辅助 */
+.mt-8 { margin-top: 8px; }
+.mt-12 { margin-top: 12px; }
+.mt-16 { margin-top: 16px; }
+.mt-20 { margin-top: 20px; }
+.mb-8 { margin-bottom: 8px; }
+.mb-12 { margin-bottom: 12px; }
+.mb-16 { margin-bottom: 16px; }
+.mb-20 { margin-bottom: 20px; }
+
+/* 大数字展示（指标卡用） */
+.metric-number {
+  font-size: 30px;
+  font-weight: 700;
+  line-height: 1.1;
+  color: var(--text-primary);
+  font-variant-numeric: tabular-nums; /* 数字等宽，避免跳动 */
+}
+
+/* ---------- 滚动条美化（WebKit / macOS Safari & Chrome 友好） ---------- */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #c7ccd6;
+  border-radius: 8px;
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #aab1bd;
+  background-clip: content-box;
+}
+/* Firefox 滚动条 */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #c7ccd6 transparent;
+}
+
+/* ---------- Element Plus 细节微调，贴合主色与圆角风格 ---------- */
+
+/* 卡片圆角与阴影对齐设计 token */
+.el-card {
+  border-radius: var(--radius) !important;
+  border: 1px solid var(--border-light) !important;
+  box-shadow: var(--shadow-card) !important;
+}
+
+/* 主按钮使用项目主色 */
+.el-button--primary {
+  --el-button-bg-color: var(--brand);
+  --el-button-border-color: var(--brand);
+  --el-button-hover-bg-color: var(--brand-light);
+  --el-button-hover-border-color: var(--brand-light);
+  --el-button-active-bg-color: var(--brand-dark);
+  --el-button-active-border-color: var(--brand-dark);
+}
+
+/* 表格表头浅灰底，B 端常见样式；数字列等宽避免跳动 */
+.el-table th.el-table__cell {
+  background-color: #fafbfc !important;
+  color: var(--text-regular);
+  font-weight: 600;
+}
+.el-table {
+  font-variant-numeric: tabular-nums;
+}
+
+/* 全局主色变量对齐 Element Plus，使链接、选中态等统一为品牌蓝 */
+:root {
+  --el-color-primary: #2563EB;
+}
+
+/* 标签圆角更柔和 */
+.el-tag {
+  border-radius: var(--radius-sm);
+}
+
+/* 进入页面的淡入动画，提升专业观感 */
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.18s ease;
+}
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+}
