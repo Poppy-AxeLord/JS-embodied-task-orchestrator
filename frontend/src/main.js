@@ -26,6 +26,12 @@ import './styles/global.css'
 // 创建应用实例
 const app = createApp(App)
 
+// 运行时错误统一写入控制台，避免演示页在单个可视化组件异常时只留下无上下文的 Vue 警告。
+// 不向访客暴露技术栈信息，但保留开发环境可诊断性。
+app.config.errorHandler = (error, _instance, info) => {
+  console.error('[应用渲染异常]', info, error)
+}
+
 // 全量注册图标组件：以图标英文名作为组件名注册为全局组件
 for (const [name, component] of Object.entries(ElementPlusIconsVue)) {
   app.component(name, component)

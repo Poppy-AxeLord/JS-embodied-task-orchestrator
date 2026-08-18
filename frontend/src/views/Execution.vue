@@ -56,6 +56,24 @@ const STEP_STATE = {
   FAILED: 'failed' // 失败
 }
 
+// 展示模式的默认任务：首次进入执行页也能立即看到完整工作流、工作单元与待执行日志。
+// 用户从编排页跳转时，sessionStorage 中的真实编排结果会优先覆盖它。
+const SHOWCASE_TASK = {
+  instruction: '将红色杯子稳定放置到右侧收纳区',
+  strategy: 'llm',
+  task_type: '取送',
+  difficulty: '中等',
+  goal: '红色杯子位于右侧收纳区，且动作完成后得到确认',
+  constraints: ['避开工作台边缘', '保持杯体竖直', '放置后进行状态确认'],
+  steps: [
+    { index: 1, skill_code: 'FindObject', skill_name: '识别目标物体', description: '识别红色杯子与可抓取区域', expected_duration_ms: 620 },
+    { index: 2, skill_code: 'Locate', skill_name: '定位目标与收纳区', description: '确定抓取点和右侧放置坐标', expected_duration_ms: 750 },
+    { index: 3, skill_code: 'Grasp', skill_name: '稳定抓取目标', description: '以自适应力度抓取杯体', expected_duration_ms: 880 },
+    { index: 4, skill_code: 'MoveTo', skill_name: '移动至收纳区', description: '沿安全路径移动至右侧收纳区', expected_duration_ms: 1020 },
+    { index: 5, skill_code: 'Place', skill_name: '放置并确认结果', description: '放置杯子并确认任务完成', expected_duration_ms: 760 },
+  ],
+}
+
 // ------------------------------ 响应式状态 ------------------------------
 // 从 sessionStorage 读取的已解析任务
 const parsed = ref(null)
@@ -90,6 +108,10 @@ const compareData = ref(null) // { results: [{strategy,success,...}] }
 // ------------------------------ 计算属性 ------------------------------
 // 总步骤数
 const totalSteps = computed(() => parsed.value?.steps?.length || 0)
+
+// 尚未执行时同样给出可解释的时间口径，避免演示首屏出现“--”这类占位数据。
+const estimatedTotalMs = computed(() => (parsed.value?.steps || [])
+  .reduce((sum, step) => sum + Number(step.expected_duration_ms || step.duration_ms || 0), 0))
 
 // 已完成（成功或失败）的步骤数 —— 用于进度条
 const doneSteps = computed(
@@ -176,6 +198,11 @@ onMounted(() => {
       parsed.value = null
     }
   }
+  // 不把首次访问导向空白提示：它应该是一段可立即播放、可供讲解的完整演示。
+  if (!parsed.value?.steps?.length) {
+    parsed.value = SHOWCASE_TASK
+  }
+  buildInitialLogs()
 })
 
 onBeforeUnmount(() => {
@@ -525,9 +552,9 @@ function goDashboard() {
                 <span class="exec-progress__meta-value">{{ execResult?.retry_count ?? 0 }}</span>
               </div>
               <div class="exec-progress__meta-item">
-                <span class="exec-progress__meta-label">总耗时</span>
+                <span class="exec-progress__meta-label">{{ phase === 'finished' ? '总耗时' : '预计总耗时' }}</span>
                 <span class="exec-progress__meta-value">
-                  {{ phase === 'finished' ? fmtMs(execResult?.total_duration_ms) : '--' }}
+                  {{ phase === 'finished' ? fmtMs(execResult?.total_duration_ms) : fmtMs(estimatedTotalMs) }}
                 </span>
               </div>
             </div>
@@ -960,5 +987,14 @@ function goDashboard() {
 }
 .exec-compare__note :deep(.el-alert__description) {
   line-height: 1.6;
+}
+@media (max-width: 700px) {
+  .exec-main { grid-template-columns: 1fr; gap: 12px; }
+  .exec-toolbar__row, .exec-toolbar__left { align-items: stretch; }
+  .exec-toolbar__left { flex-wrap: wrap; }
+  .exec-toolbar__right { width: 100%; }
+  .exec-toolbar__right :deep(.el-button) { flex: 1; margin-left: 0; min-width: 74px; }
+  .exec-progress__meta { flex-direction: column; gap: 8px; }
+  .exec-compare__grid { grid-template-columns: 1fr; }
 }
 </style>

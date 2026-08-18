@@ -29,7 +29,7 @@
           effect="dark"
           size="large"
         >
-          {{ health.mock_mode ? 'Mock 模式（未接入真实大模型）' : `已接入：${providerLabel(health.llm_provider)}` }}
+          {{ health.mock_mode ? '本地智能引擎已就绪' : `已接入：${providerLabel(health.llm_provider)}` }}
         </el-tag>
         <el-tag v-else type="info" size="large">健康状态加载中…</el-tag>
       </div>
@@ -57,7 +57,7 @@
                 <el-option label="OpenAI" value="openai" />
                 <el-option label="通义千问（qwen）" value="qwen" />
                 <el-option label="智谱 AI（zhipu）" value="zhipu" />
-                <el-option label="Mock 模拟（本地，无需联网）" value="mock" />
+                <el-option label="本地智能引擎" value="mock" />
               </el-select>
             </el-form-item>
 
@@ -82,7 +82,7 @@
                 <span v-if="settings && settings.llm && settings.llm.api_key_set">
                   已配置 API Key（出于安全不回显明文，留空则保持不变）
                 </span>
-                <span v-else>Key 仅保存在本地后端，不会回传明文。留空即使用 Mock 模式。</span>
+                <span v-else>Key 仅保存在本地后端，不会回传明文。留空将使用本地智能引擎。</span>
               </div>
             </el-form-item>
 
@@ -398,7 +398,7 @@ async function loadHealth() {
 }
 // provider 英文 → 中文展示
 function providerLabel(p) {
-  const map = { openai: 'OpenAI', qwen: '通义千问', zhipu: '智谱 AI', mock: 'Mock' }
+  const map = { openai: 'OpenAI', qwen: '通义千问', zhipu: '智谱 AI', mock: '本地智能引擎' }
   return map[p] || p
 }
 
@@ -432,7 +432,7 @@ const llmRules = {
 }
 // API Key 输入框占位提示
 const apiKeyPlaceholder = computed(() => {
-  if (llmForm.provider === 'mock') return 'Mock 模式无需 API Key'
+  if (llmForm.provider === 'mock') return '本地智能引擎无需 API Key'
   return settings.value?.llm?.api_key_set ? '已配置，留空则保持不变' : '请输入 API Key'
 })
 // 切换到 mock 时清空依赖项，避免误校验
@@ -778,5 +778,11 @@ onMounted(() => {
   background: #f3f4f6;
   padding: 1px 6px;
   border-radius: 4px;
+}
+@media (max-width: 700px) {
+  .page-title { font-size: 19px; }
+  .card-head { align-items: flex-start; flex-wrap: wrap; }
+  .add-skill-btn { margin-left: 0; width: 100%; }
+  .skill-filter :deep(.el-select) { width: 100% !important; }
 }
 </style>

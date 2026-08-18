@@ -17,7 +17,8 @@ import {
   Setting, // 系统设置
   Cpu, // logo 图标
   Connection, // 已接入状态图标
-  MagicStick // Mock 状态图标
+  MagicStick, // Mock 状态图标
+  Menu as MenuIcon
 } from '@element-plus/icons-vue'
 import { getHealth } from '@/api'
 
@@ -39,6 +40,7 @@ const menus = [
 // ---------- 后端健康状态（Mock / 已接入 徽标） ----------
 const health = ref(null) // { status, mock_mode, llm_provider }
 const healthLoading = ref(true)
+const mobileNavOpen = ref(false)
 
 // 是否 Mock 模式（未配置真实 API Key）
 const isMock = computed(() => health.value?.mock_mode !== false)
@@ -63,7 +65,7 @@ onMounted(loadHealth)
 <template>
   <el-container class="app-root">
     <!-- ============ 左侧深色侧边栏 ============ -->
-    <el-aside width="240px" class="app-aside">
+    <el-aside width="240px" class="app-aside desktop-aside">
       <!-- Logo 区 -->
       <div class="logo">
         <el-icon class="logo-icon"><Cpu /></el-icon>
@@ -94,15 +96,30 @@ onMounted(loadHealth)
 
       <!-- 侧边栏底部版本信息 -->
       <div class="aside-footer">
-        <span>v1.0 · 数据闭环演示版</span>
+        <span>v1.0 · 数据闭环平台</span>
       </div>
     </el-aside>
+
+    <!-- 手机端改为抽屉导航：不能让固定 240px 侧栏挤压 390px 视口。 -->
+    <el-drawer v-model="mobileNavOpen" direction="ltr" size="280px" :with-header="false" class="mobile-nav-drawer">
+      <div class="mobile-drawer-content">
+        <div class="logo">
+          <el-icon class="logo-icon"><Cpu /></el-icon>
+          <div class="logo-text"><div class="logo-title">具身智能</div><div class="logo-sub">任务编排平台</div></div>
+        </div>
+        <el-menu :default-active="activeMenu" class="app-menu" background-color="transparent" text-color="#cbd5e1" active-text-color="#ffffff" router @select="mobileNavOpen = false">
+          <el-menu-item v-for="item in menus" :key="item.path" :index="item.path"><el-icon><component :is="item.icon" /></el-icon><span>{{ item.title }}</span></el-menu-item>
+        </el-menu>
+        <div class="aside-footer"><span>v1.0 · 数据闭环平台</span></div>
+      </div>
+    </el-drawer>
 
     <!-- ============ 右侧主体（顶栏 + 内容区） ============ -->
     <el-container class="app-body">
       <!-- 顶部 Header -->
       <el-header class="app-header">
         <div class="header-left">
+          <el-button class="mobile-nav-trigger" text circle aria-label="打开导航" @click="mobileNavOpen = true"><el-icon><MenuIcon /></el-icon></el-button>
           <h1 class="header-title">具身智能任务编排平台</h1>
           <span class="header-subtitle">自然语言驱动 · 任务拆解 · 执行仿真 · 数据闭环</span>
         </div>
@@ -120,7 +137,7 @@ onMounted(loadHealth)
               <MagicStick v-if="isMock" />
               <Connection v-else />
             </el-icon>
-            {{ isMock ? 'Mock 模式' : `已接入 ${provider}` }}
+            {{ isMock ? '本地智能引擎' : `已接入 ${provider}` }}
           </el-tag>
           <el-tag v-else type="info" effect="plain" round class="mode-tag">
             连接中…
@@ -153,7 +170,11 @@ onMounted(loadHealth)
   display: flex;
   flex-direction: column;
   border-right: 1px solid rgba(255, 255, 255, 0.04);
+  position: relative;
+  overflow: hidden;
 }
+.app-aside::after { content: ''; position: absolute; inset: auto -68px -42px auto; width: 250px; height: 250px; background: url('/visuals/orchestration-hero.png') center / cover no-repeat; opacity: .16; border-radius: 50%; filter: saturate(.8) contrast(1.15); pointer-events: none; }
+.logo, .app-menu, .aside-footer { position: relative; z-index: 1; }
 
 /* Logo 区 */
 .logo {
@@ -234,6 +255,7 @@ onMounted(loadHealth)
 .app-body {
   background: var(--bg-page);
   overflow: hidden;
+  min-width: 0;
 }
 
 /* 顶栏 */
@@ -284,7 +306,12 @@ onMounted(loadHealth)
   padding: 20px;
   overflow-y: auto;
   height: calc(100vh - var(--header-height));
+  min-width: 0;
 }
+.mobile-nav-trigger { display: none; font-size: 21px; color: var(--text-primary); }
+.mobile-drawer-content { height: 100%; display: flex; flex-direction: column; background: var(--sidebar-bg); margin: -20px; }
+.mobile-drawer-content .app-menu { flex: 1; }
+.mobile-drawer-content .aside-footer { padding-bottom: 20px; }
 
 /* 窄屏自适应：隐藏副标题，避免顶栏拥挤 */
 @media (max-width: 900px) {
@@ -292,4 +319,18 @@ onMounted(loadHealth)
     display: none;
   }
 }
+
+@media (max-width: 700px) {
+  .desktop-aside { display: none; }
+  .mobile-nav-trigger { display: inline-flex; margin-left: -8px; }
+  .app-header { padding: 0 12px; }
+  .header-left { min-width: 0; gap: 6px; }
+  .header-title { font-size: 16px; line-height: 1.25; }
+  .header-right { display: none; }
+  .app-main { padding: 12px; height: calc(100vh - var(--header-height)); }
+  .app-main :deep(.el-col) { flex: 0 0 100%; max-width: 100%; }
+}
+
+:global(.mobile-nav-drawer .el-drawer) { background: var(--sidebar-bg); }
+:global(.mobile-nav-drawer .el-drawer__body) { padding: 20px; overflow: hidden; }
 </style>

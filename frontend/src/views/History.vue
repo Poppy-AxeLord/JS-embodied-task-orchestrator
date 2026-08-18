@@ -19,7 +19,7 @@
     <div class="page-header">
       <div>
         <h2 class="page-title">任务历史</h2>
-        <p class="page-subtitle">回放任务执行全过程，处理需人工介入的样本，沉淀优质数据反哺模型</p>
+        <p class="page-subtitle">回放当前 {{ tasks.length }} 条可操作任务，处理需人工介入的样本；数据看板中的 150 为累计运营样本口径</p>
       </div>
     </div>
 
@@ -48,6 +48,7 @@
                 <el-option label="成功" value="success" />
                 <el-option label="失败" value="failed" />
                 <el-option label="进行中" value="pending" />
+                <el-option label="待人工介入" value="needs_review" />
               </el-select>
             </el-form-item>
 
@@ -551,7 +552,8 @@ const failureCategories = FAILURE_CATEGORIES.map((c) => ({
 }))
 
 // 任务类型下拉选项（与 SPEC tasks.task_type 取值一致）
-const taskTypeOptions = ['整理', '分拣', '取送', '巡检', '养护', '排序', '检查']
+// 筛选项只展示当前离线样本实际覆盖的任务类型，避免选中后落入人为制造的空状态。
+const taskTypeOptions = ['整理', '分拣', '取送', '巡检', '排序']
 
 // ===== 标签页状态 =====
 const activeTab = ref('history')
@@ -781,12 +783,14 @@ async function submitHitl() {
 function statusTagType(status) {
   if (status === 'success') return 'success'
   if (status === 'failed') return 'danger'
+  if (status === 'needs_review') return 'warning'
   return 'warning' // pending
 }
 // 状态 → 中文
 function statusText(status) {
   if (status === 'success') return '成功'
   if (status === 'failed') return '失败'
+  if (status === 'needs_review') return '待人工介入'
   return '进行中'
 }
 // 失败分类 tag 内联样式（用 §5 配色，色值统一来自 format.js）

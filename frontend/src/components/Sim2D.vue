@@ -38,18 +38,18 @@ const props = defineProps({
 // 房间内坐标系：viewBox 0 0 600 400。以下为各关键家具/区域的中心点。
 const LAYOUT = {
   home: { x: 80, y: 330 }, // 机器人起始点 / 充电点（左下角）
-  table: { x: 300, y: 150 }, // 桌子中心
+  table: { x: 300, y: 230 }, // 工作台中心
   shelf: { x: 520, y: 110 }, // 货架（右上）
-  storage: { x: 520, y: 300 }, // 收纳盒（右下）
+  storage: { x: 520, y: 335 }, // 收纳箱（右下）
   window: { x: 300, y: 30 } // 窗户（上方墙）
 }
 
 // 三个彩色物品的"初始归位坐标"（散落在桌面上）
 // id 用于渲染 key；color 决定填充色；shape 决定形状（杯子/方块/盒子）
 const INIT_ITEMS = [
-  { id: 'cup', name: '杯子', shape: 'cup', color: '#E8684A', home: { x: 250, y: 130 } },
-  { id: 'block', name: '方块', shape: 'block', color: '#2563EB', home: { x: 320, y: 165 } },
-  { id: 'box', name: '盒子', shape: 'box', color: '#5AD8A6', home: { x: 360, y: 130 } }
+  { id: 'cup', name: '杯子', shape: 'cup', color: '#E8684A', home: { x: 250, y: 218 } },
+  { id: 'block', name: '方块', shape: 'block', color: '#2563EB', home: { x: 315, y: 242 } },
+  { id: 'box', name: '盒子', shape: 'box', color: '#5AD8A6', home: { x: 360, y: 218 } }
 ]
 
 // ------------------------------ 语义推断辅助 ------------------------------
@@ -111,6 +111,15 @@ const robotAngle = computed(() => {
   const dy = cur.y - prev.y
   if (dx === 0 && dy === 0) return 0
   return (Math.atan2(dy, dx) * 180) / Math.PI
+})
+
+// 已执行路径：将抽象步骤转成连续路线，叠加在真实工作站画面上。
+const trailPoints = computed(() => {
+  const points = [LAYOUT.home]
+  for (let i = 0; i <= props.stepIndex && i < props.steps.length; i++) {
+    if (props.steps[i]) points.push(targetOfStep(props.steps[i]))
+  }
+  return points.map((point) => `${point.x},${point.y}`).join(' ')
 })
 
 /**
@@ -270,6 +279,20 @@ const sceneTitle = computed(() => {
         <text x="80" y="372" text-anchor="middle" class="sim2d__label">起始点</text>
       </g>
 
+      <!-- 使用真实材质的工作站渲染替代原有扁平化场景底图。 -->
+      <image href="/visuals/execution-workcell.png" x="0" y="0" width="600" height="400" preserveAspectRatio="xMidYMid slice" />
+      <rect x="0" y="0" width="600" height="400" fill="rgba(5, 18, 39, 0.05)" />
+
+      <!-- 站点定位层：让高质感场景仍然保持任务语义可读。 -->
+      <g class="sim2d__stations">
+        <g transform="translate(300 230)"><circle r="28" /><text y="45">操作台</text></g>
+        <g transform="translate(520 110)"><circle r="24" /><text y="39">货架</text></g>
+        <g transform="translate(520 335)"><circle r="24" /><text y="39">收纳区</text></g>
+        <!-- 起始点会被机器人占用，标签置于上方，避免与“机器人”状态标签重叠。 -->
+        <g transform="translate(80 330)"><circle r="24" /><text y="-32">充电基座</text></g>
+      </g>
+      <polyline v-if="trailPoints" :points="trailPoints" class="sim2d__trail" />
+
       <!-- ====================== 可移动物品 ====================== -->
       <!-- 用 <g> 包裹并对 transform 设置 transition，实现平滑移动 -->
       <g
@@ -333,7 +356,9 @@ const sceneTitle = computed(() => {
           <animate attributeName="opacity" values="0.22;0.05;0.22" dur="1.6s" repeatCount="indefinite" />
         </circle>
         <!-- 机器人本体 -->
-        <circle cx="0" cy="0" r="16" fill="#2563EB" stroke="#1E40AF" stroke-width="2" />
+        <ellipse cx="0" cy="12" rx="19" ry="7" fill="#061733" opacity="0.22" />
+        <circle cx="0" cy="0" r="18" fill="#0B5FFF" stroke="#E9F3FF" stroke-width="2.5" />
+        <circle cx="0" cy="0" r="10" fill="#11336D" opacity="0.55" />
         <!-- 朝向小三角（随角度旋转） -->
         <g :style="{ transform: `rotate(${robotAngle}deg)` }" class="sim2d__robot-dir">
           <polygon points="14,0 4,-6 4,6" fill="#ffffff" />
@@ -377,7 +402,14 @@ const sceneTitle = computed(() => {
   background: var(--bg-card);
   border: 1px solid var(--border-light);
   border-radius: var(--radius);
+  overflow: hidden;
+  box-shadow: 0 12px 26px rgba(15, 23, 42, 0.14);
 }
+
+.sim2d__stations circle { fill: rgba(255,255,255,.18); stroke: rgba(255,255,255,.72); stroke-width: 1.5; stroke-dasharray: 3 3; }
+.sim2d__stations text { font-size: 10px; font-weight: 700; fill: #17315f; text-anchor: middle; paint-order: stroke; stroke: rgba(255,255,255,.85); stroke-width: 3px; stroke-linejoin: round; }
+.sim2d__trail { fill: none; stroke: #2b8cff; stroke-width: 4; stroke-linecap: round; stroke-linejoin: round; opacity: .78; stroke-dasharray: 7 7; filter: drop-shadow(0 1px 2px rgba(18,105,220,.45)); animation: trail-flow 1.2s linear infinite; }
+@keyframes trail-flow { to { stroke-dashoffset: -28; } }
 
 /* 物品与机器人统一的平滑过渡 —— 这是"动画感"的核心 */
 .sim2d__item,
@@ -393,6 +425,9 @@ const sceneTitle = computed(() => {
 .sim2d__label {
   font-size: 11px;
   fill: #64748b;
+  /* 底层的早期 SVG 家具仅用于保留坐标参照；现由工作站实景图承载视觉，
+     隐藏旧标注以避免与上层站点标签重叠。 */
+  display: none;
 }
 
 .sim2d__robot-label {

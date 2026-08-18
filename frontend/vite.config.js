@@ -21,5 +21,17 @@ export default defineConfig({
     port: 5173,
     // 开发期允许局域网访问（演示方便）；不影响生产构建
     host: true
+  },
+  // 演示站的三个大依赖拆开加载：首访不再把图表和整套 UI 与业务代码捆成单一大包。
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          'vue-vendor': ['vue', 'vue-router'],
+          'element-plus': ['element-plus', '@element-plus/icons-vue'],
+          charts: ['echarts'],
+        }
+      }
+    }
   }
 })

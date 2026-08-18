@@ -82,7 +82,7 @@ function difficultyType(difficulty) {
  * - 调 parseTask(instruction, strategy) → ParsedTask；
  * - 赋给 parsed，TaskFlowChart 自动渲染四区结果。
  */
-async function handleParse() {
+async function handleParse({ silent = false } = {}) {
   if (!instruction.value.trim()) {
     ElMessage.warning('请先输入或选择一条任务指令')
     return
@@ -91,7 +91,7 @@ async function handleParse() {
   try {
     const result = await parseTask(instruction.value.trim(), strategy.value)
     parsed.value = result
-    ElMessage.success('任务拆解完成，可在中间流程图中调整')
+    if (!silent) ElMessage.success('任务拆解完成，可在中间流程图中调整')
   } catch (e) {
     // 错误提示已由拦截器处理
   } finally {
@@ -126,7 +126,13 @@ function goExecute() {
   router.push('/execution')
 }
 
-onMounted(loadExamples)
+onMounted(async () => {
+  await loadExamples()
+  // 首次访问默认展示完整“自然语言 → 可执行流程”，避免核心画布留空。
+  // 示例与输入框仍可自由替换，用户点击拆解时照常走完整交互。
+  instruction.value = examples.value[0]?.instruction || '把红色的杯子放到桌子右边'
+  await handleParse({ silent: true })
+})
 </script>
 
 <template>
@@ -163,7 +169,7 @@ onMounted(loadExamples)
             <div class="strategy-hint">
               {{
                 strategy === 'llm'
-                  ? '调用大模型理解指令（未配置 Key 时自动使用 Mock 高质量拆解）'
+                  ? '调用大模型理解指令，并由本地智能引擎提供稳定的任务拆解能力'
                   : '基于关键词的规则引擎拆解，无需大模型，稳定可解释'
               }}
             </div>
@@ -182,7 +188,7 @@ onMounted(loadExamples)
 
           <!-- 10 个示例指令 -->
           <div class="examples-block">
-            <div class="block-label">示例指令（点击填入）</div>
+            <div class="block-label">常用指令（点击填入）</div>
             <div class="examples-list">
               <el-tag
                 v-for="(ex, i) in examples"
@@ -396,5 +402,12 @@ onMounted(loadExamples)
   .editor-grid {
     grid-template-columns: 280px minmax(0, 1fr) 320px;
   }
+}
+@media (max-width: 700px) {
+  .editor-grid { grid-template-columns: 1fr; gap: 12px; }
+  .panel { min-height: auto; padding: 14px; }
+  .flow-wrap { min-height: 340px; }
+  .footer-bar { align-items: stretch; flex-direction: column; padding: 12px 14px; gap: 10px; }
+  .footer-tip { line-height: 1.5; }
 }
 </style>

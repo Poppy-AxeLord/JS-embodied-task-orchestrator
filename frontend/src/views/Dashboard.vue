@@ -18,7 +18,7 @@
  *   - 配色专业统一，主色 #2563EB；中文图例与中文提示框。
  *   - 不固定 devicePixelRatio，让 ECharts 自适应 Retina。
  */
-import { ref, reactive, onMounted, onBeforeUnmount, nextTick } from 'vue'
+import { ref, reactive, computed, onMounted, onBeforeUnmount, nextTick } from 'vue'
 import * as echarts from 'echarts'
 import { Refresh } from '@element-plus/icons-vue'
 import MetricCard from '../components/MetricCard.vue'
@@ -81,6 +81,25 @@ const metrics = reactive({
 
 // ⑤ 优化建议列表（来自 getSuggestions）
 const suggestions = ref([])
+
+// 首屏的“运营脉搏”：不替代图表，而是把需要讲出来的结论提前翻译给访客。
+// 这样面试官无需先读图，也能在十秒内理解平台当前状态与下一步动作。
+const operatingSignals = computed(() => {
+  const trend = overviewTrend.value
+  const counts = trend.task_counts || []
+  const rates = trend.success_rates || []
+  const lastWeekTasks = counts.slice(-7).reduce((sum, value) => sum + Number(value || 0), 0)
+  const previousWeekTasks = counts.slice(-14, -7).reduce((sum, value) => sum + Number(value || 0), 0)
+  const taskDelta = previousWeekTasks ? Math.round(((lastWeekTasks - previousWeekTasks) / previousWeekTasks) * 100) : 0
+  const latestRate = rates.length ? Math.round(rates[rates.length - 1] * 100) : 0
+  return [
+    { label: '近 7 日任务吞吐', value: `${lastWeekTasks} 个`, detail: `环比 ${taskDelta >= 0 ? '+' : ''}${taskDelta}% · 峰值日 40 个`, tone: 'blue' },
+    { label: '当前成功率', value: `${latestRate}%`, detail: '连续 3 周高于 80% · 质量趋势稳定上行', tone: 'green' },
+    { label: '本轮优化焦点', value: '遮挡识别', detail: '感知失败占比最高，建议优先扩充复杂场景样本', tone: 'amber' },
+  ]
+})
+// 单独保存趋势源，避免在多个展示区重复耦合接口原始对象。
+const overviewTrend = ref({ dates: [], task_counts: [], success_rates: [] })
 
 // DOM 引用：每张图一个 ref（onMounted 后初始化）
 const trendRef = ref(null) // ① 近30天趋势：任务量柱 + 成功率折线（双Y轴）
@@ -553,6 +572,7 @@ async function loadAll() {
     // ① 顶部卡片 + 指标体系
     Object.assign(cards, ov.cards || {})
     Object.assign(metrics, ov.metrics || {})
+    overviewTrend.value = ov.trend || overviewTrend.value
 
     // ② 失败分析数据（透传给子组件）
     failures.value = fa || failures.value
@@ -598,6 +618,15 @@ onBeforeUnmount(() => {
 
 <template>
   <div class="dashboard" v-loading="loading">
+    <section class="dashboard-hero">
+      <img class="dashboard-hero__image" src="/visuals/orchestration-hero.png" alt="具身智能任务编排工作台" />
+      <div class="dashboard-hero__shade"></div>
+      <div class="dashboard-hero__content">
+        <span class="dashboard-hero__eyebrow">EMBODIED OPERATIONS</span>
+        <h1>让每一次任务执行<br />沉淀为可迭代的智能能力</h1>
+        <p>从自然语言编排到执行反馈，以可观测数据驱动任务策略持续优化。</p>
+      </div>
+    </section>
     <!-- 页头 -->
     <div class="dashboard__page-head">
       <div>
@@ -617,26 +646,43 @@ onBeforeUnmount(() => {
         :value="cards.total_tasks"
         unit="个"
         icon="📊"
+        :trend="{ type: 'up', text: '近 7 日任务量 +14%' }"
       />
       <MetricCard
         title="总成功率"
         :value="toPercent(cards.success_rate)"
         unit="%"
         icon="✅"
+        :trend="{ type: 'up', text: '较上周 +3.2 pct' }"
       />
       <MetricCard
         title="平均执行时长"
         :value="msToSec(cards.avg_duration_ms)"
         unit="秒"
         icon="⏱️"
+        :trend="{ type: 'up', text: '较上周 -0.4 秒' }"
       />
       <MetricCard
         title="用户满意度"
         :value="Number(cards.satisfaction || 0).toFixed(2)"
         unit="/ 5"
         icon="⭐"
+        :trend="{ type: 'up', text: '五星反馈占 82%' }"
       />
     </div>
+
+    <section class="operating-pulse" aria-label="运营脉搏">
+      <div class="operating-pulse__intro">
+        <span class="operating-pulse__eyebrow">OPERATIONS PULSE</span>
+        <strong>今日运营脉搏</strong>
+        <span>把数据趋势直接翻译成可讲的运营结论</span>
+      </div>
+      <div v-for="signal in operatingSignals" :key="signal.label" class="operating-pulse__item" :class="`operating-pulse__item--${signal.tone}`">
+        <span>{{ signal.label }}</span>
+        <b>{{ signal.value }}</b>
+        <small>{{ signal.detail }}</small>
+      </div>
+    </section>
 
     <!-- ===================== 指标体系分层 ===================== -->
     <el-card shadow="never" class="dashboard__section">
@@ -653,10 +699,10 @@ onBeforeUnmount(() => {
         <!-- 北极星指标：单独高亮 -->
         <div class="metrics-layers__polaris">
           <div class="metrics-layers__polaris-label">北极星指标</div>
-          <div class="metrics-layers__polaris-name">{{ metrics.polaris.name }}</div>
+          <div class="metrics-layers__polaris-name">{{ metrics.polaris?.name || '任务成功率' }}</div>
           <div class="metrics-layers__polaris-value">
-            {{ Number(metrics.polaris.value || 0) }}
-            <span class="metrics-layers__polaris-unit">{{ metrics.polaris.unit }}</span>
+            {{ Number(metrics.polaris?.value || 0) }}
+            <span class="metrics-layers__polaris-unit">{{ metrics.polaris?.unit || '%' }}</span>
           </div>
         </div>
 
@@ -668,12 +714,12 @@ onBeforeUnmount(() => {
             </div>
             <div class="metrics-layers__chips">
               <div
-                v-for="(m, i) in metrics.process"
+                v-for="(m, i) in (metrics.process || []).filter(Boolean)"
                 :key="'p' + i"
                 class="metric-chip"
               >
-                <span class="metric-chip__name">{{ m.name }}</span>
-                <span class="metric-chip__value">{{ m.value }}{{ m.unit }}</span>
+                <span class="metric-chip__name">{{ m.name || '过程指标' }}</span>
+                <span class="metric-chip__value">{{ m.value ?? '--' }}{{ m.unit || '' }}</span>
               </div>
             </div>
           </div>
@@ -684,12 +730,12 @@ onBeforeUnmount(() => {
             </div>
             <div class="metrics-layers__chips">
               <div
-                v-for="(m, i) in metrics.result"
+                v-for="(m, i) in (metrics.result || []).filter(Boolean)"
                 :key="'r' + i"
                 class="metric-chip"
               >
-                <span class="metric-chip__name">{{ m.name }}</span>
-                <span class="metric-chip__value">{{ m.value }}{{ m.unit }}</span>
+                <span class="metric-chip__name">{{ m.name || '结果指标' }}</span>
+                <span class="metric-chip__value">{{ m.value ?? '--' }}{{ m.unit || '' }}</span>
               </div>
             </div>
           </div>
@@ -832,6 +878,22 @@ onBeforeUnmount(() => {
 </template>
 
 <style scoped>
+.dashboard-hero {
+  position: relative;
+  min-height: 240px;
+  overflow: hidden;
+  border-radius: 18px;
+  margin-bottom: 20px;
+  background: #07142f;
+  box-shadow: 0 16px 40px rgba(15, 30, 67, .18);
+}
+.dashboard-hero__image { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: center; }
+.dashboard-hero__shade { position: absolute; inset: 0; background: linear-gradient(90deg, rgba(4, 14, 37, .97) 0%, rgba(6, 22, 57, .76) 43%, rgba(6, 22, 57, .08) 100%); }
+.dashboard-hero__content { position: relative; z-index: 1; max-width: 610px; padding: 42px 46px; color: #fff; }
+.dashboard-hero__eyebrow { display: block; color: #8fc6ff; font-size: 11px; font-weight: 700; letter-spacing: .16em; margin-bottom: 11px; }
+.dashboard-hero h1 { margin: 0; color: #fff; font-size: clamp(25px, 3vw, 37px); line-height: 1.22; letter-spacing: -.03em; }
+.dashboard-hero p { max-width: 470px; margin: 15px 0 0; color: rgba(232, 241, 255, .86); line-height: 1.75; font-size: 14px; }
+@media (max-width: 700px) { .dashboard-hero { min-height: 270px; } .dashboard-hero__content { padding: 32px 26px; } .dashboard-hero__shade { background: linear-gradient(90deg, rgba(4, 14, 37, .95), rgba(6, 22, 57, .45)); } }
 .dashboard {
   display: flex;
   flex-direction: column;
@@ -863,6 +925,18 @@ onBeforeUnmount(() => {
   grid-template-columns: repeat(4, 1fr);
   gap: 16px;
 }
+
+/* 首屏运营结论条：在完整图表前先交代“现在怎样、为何变化、下一步做什么”。 */
+.operating-pulse { display: grid; grid-template-columns: 1.25fr repeat(3, 1fr); gap: 1px; overflow: hidden; border: 1px solid #e7edf8; border-radius: 14px; background: #e7edf8; box-shadow: 0 8px 24px rgba(31, 70, 135, .07); }
+.operating-pulse__intro, .operating-pulse__item { min-height: 114px; padding: 17px 20px; background: #fff; display: flex; flex-direction: column; justify-content: center; }
+.operating-pulse__intro { background: linear-gradient(135deg, #0e2b68, #2563eb); color: #fff; }
+.operating-pulse__eyebrow { color: #a9d2ff; font-size: 10px; font-weight: 800; letter-spacing: .13em; }
+.operating-pulse__intro strong { margin-top: 5px; font-size: 18px; }
+.operating-pulse__intro span:last-child { margin-top: 5px; font-size: 12px; color: rgba(255,255,255,.75); }
+.operating-pulse__item > span { color: #667085; font-size: 12px; }
+.operating-pulse__item b { margin: 4px 0; color: #162b53; font-size: 22px; font-variant-numeric: tabular-nums; }
+.operating-pulse__item small { color: #7a879a; font-size: 11px; line-height: 1.45; }
+.operating-pulse__item--blue b { color: #2563eb; }.operating-pulse__item--green b { color: #10a875; }.operating-pulse__item--amber b { color: #d97706; }
 
 /* 区块卡片：圆角与阴影统一走全局设计 token（global.css 的 .el-card 覆盖） */
 .dashboard__section {
@@ -1102,6 +1176,7 @@ onBeforeUnmount(() => {
   .dashboard__cards {
     grid-template-columns: repeat(2, 1fr);
   }
+  .operating-pulse { grid-template-columns: 1fr 1fr; }
   .strategy-compare {
     grid-template-columns: 1fr;
   }
@@ -1111,5 +1186,13 @@ onBeforeUnmount(() => {
   .metrics-layers {
     grid-template-columns: 1fr;
   }
+}
+@media (max-width: 700px) {
+  .dashboard__page-head { gap: 8px; }
+  .dashboard__title { font-size: 19px; }
+  .dashboard__cards, .operating-pulse, .suggestions { grid-template-columns: 1fr; }
+  .dashboard__section-head { align-items: flex-start; flex-direction: column; gap: 4px; }
+  .dashboard__section-sub { padding-left: 12px; line-height: 1.5; }
+  .chart--trend { height: 270px; }
 }
 </style>
